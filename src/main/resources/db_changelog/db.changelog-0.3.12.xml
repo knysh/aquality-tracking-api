@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog/1.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog/1.9
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-1.9.xsd">
+
+    <changeSet id="Create qualification_question_status" author="s.knysh">
+        <sql endDelimiter="#">
+
+            CREATE TABLE `qualification_question_status` (
+            `id` INT(1) NOT NULL,
+            `status` VARCHAR(45) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `status_UNIQUE` (`status` ASC),
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC));
+
+            #
+            INSERT INTO `qualification_question_status` (`id`, `status`) VALUES ('1','Draft');
+            #
+            INSERT INTO `qualification_question_status` (`id`, `status`) VALUES ('2','Approved');
+        </sql>
+        <rollback>
+            DROP TABLE `qualification_question_status`;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="Create qualifications" author="s.knysh">
+        <sql endDelimiter="#">
+
+            CREATE TABLE `qualifications` (
+            `id` INT(1) NOT NULL,
+            `qualification` VARCHAR(45) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC),
+            UNIQUE INDEX `qualification_UNIQUE` (`qualification` ASC));
+
+            #
+            INSERT INTO `qualifications` (`id`, `qualification`) VALUES ('1','TD');
+            #
+            INSERT INTO `qualifications` (`id`, `qualification`) VALUES ('2','JAE');
+            #
+            INSERT INTO `qualifications` (`id`, `qualification`) VALUES ('3','AE');
+            #
+            INSERT INTO `qualifications` (`id`, `qualification`) VALUES ('4','SAE');
+        </sql>
+        <rollback>
+            DROP TABLE `qualifications`;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="Create qualification_question_category" author="s.knysh">
+        <sql endDelimiter="#">
+            CREATE TABLE `qualification_question_category` (
+            `id` INT(11) NOT NULL,
+            `category` VARCHAR(45) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC),
+            UNIQUE INDEX `category_UNIQUE` (`category` ASC));
+
+            #
+            INSERT INTO `qualification_question_category` (`id`, `category`) VALUES ('1', 'Git');
+        </sql>
+        <rollback>
+            DROP TABLE `qualification_question_category`;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="Create qualification_servey_questions table" author="s.knysh">
+        <sql endDelimiter="#">
+            CREATE TABLE `qualification_servey_questions` (
+            `id` INT NOT NULL,
+            `question_status_id` INT(1) NOT NULL,
+            `created_date` DATE NOT NULL,
+            `category` VARCHAR(45) NOT NULL,
+            `min_qualification_id` INT(1) NOT NULL,
+            `max_qualification_id` INT(1) NOT NULL,
+            `question` LONGTEXT NOT NULL,
+            `answer` LONGTEXT NOT NULL,
+            `creator_id` INT(11) NOT NULL,
+            `approver_id` INT(11) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `id_UNIQUE` (`id` ASC),
+            INDEX `question_status_idx` (`question_status_id` ASC),
+            INDEX `created_date_idx` (`created_date` ASC),
+            INDEX `category_idx` (`category` ASC),
+            INDEX `min_qualification_idx` (`min_qualification_id` ASC),
+            INDEX `max_qualification_idx` (`max_qualification_id` ASC),
+            INDEX `creator_idx` (`creator_id` ASC),
+            INDEX `approver_idx` (`approver_id` ASC),
+            CONSTRAINT `qualifiation_servey_questions_creator_id`
+            FOREIGN KEY (`creator_id`)
+            REFERENCES `users` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION,
+            CONSTRAINT `qualification_servey_questions_approver_id`
+            FOREIGN KEY (`approver_id`)
+            REFERENCES `users` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION);
+
+            #
+
+            ALTER TABLE `qualification_servey_questions`
+            ADD CONSTRAINT `qualification_servey_questions_status_id`
+            FOREIGN KEY (`question_status_id`)
+            REFERENCES `qualification_question_status` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION,
+            ADD CONSTRAINT `qualification_servey_question_min_qualification_id`
+            FOREIGN KEY (`min_qualification_id`)
+            REFERENCES `qualifications` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION,
+            ADD CONSTRAINT `qualification_servey_question_max_qualification_id`
+            FOREIGN KEY (`max_qualification_id`)
+            REFERENCES `qualifications` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION;
+
+            #
+
+            ALTER TABLE `qualification_servey_questions`
+            CHANGE COLUMN `id` `id` INT(11) NOT NULL AUTO_INCREMENT ;
+
+            #
+
+            ALTER TABLE `qualification_servey_questions`
+            CHANGE COLUMN `category` `category_id` INT(11) NOT NULL ;
+
+            #
+
+            ALTER TABLE `qualification_servey_questions`
+            ADD CONSTRAINT `qualification_servey_questions_category_id`
+            FOREIGN KEY (`category_id`)
+            REFERENCES `qualification_question_category` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION;
+
+            #
+
+            DROP TRIGGER IF EXISTS `qualification_servey_questions_BEFORE_INSERT`;
+
+            #
+
+            CREATE DEFINER = CURRENT_USER TRIGGER `qualification_servey_questions_BEFORE_INSERT` BEFORE INSERT ON `qualification_servey_questions` FOR EACH ROW
+            BEGIN
+            IF NEW.min_qualification_id > NEW.max_qualification_id
+            THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'MAX qualification should be more than MIN qualification';
+            END IF;
+            END
+
+            #
+
+            DROP TRIGGER IF EXISTS `qualification_servey_questions_BEFORE_UPDATE`;
+
+            #
+
+            CREATE DEFINER = CURRENT_USER TRIGGER `qualification_servey_questions_BEFORE_UPDATE` BEFORE UPDATE ON `qualification_servey_questions` FOR EACH ROW
+            BEGIN
+            IF NEW.min_qualification_id > NEW.max_qualification_id
+            THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'MAX qualification should be more than MIN qualification';
+            END IF;
+            END
+
+            #
+
+            ALTER TABLE `qualification_servey_questions`
+            DROP FOREIGN KEY `qualifiation_servey_questions_creator_id`,
+            DROP FOREIGN KEY `qualification_servey_questions_approver_id`,
+            DROP FOREIGN KEY `qualification_servey_questions_category_id`;
+
+            #
+
+            ALTER TABLE `qualification_servey_questions`
+            CHANGE COLUMN `category_id` `category_id` INT(11) NULL ,
+            CHANGE COLUMN `question` `question` LONGTEXT NULL ,
+            CHANGE COLUMN `answer` `answer` LONGTEXT NULL ,
+            CHANGE COLUMN `creator_id` `creator_id` INT(11) NULL ,
+            CHANGE COLUMN `approver_id` `approver_id` INT(11) NULL ;
+
+            #
+
+            ALTER TABLE `qualification_servey_questions`
+            ADD CONSTRAINT `qualifiation_servey_questions_creator_id`
+            FOREIGN KEY (`creator_id`)
+            REFERENCES `users` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION,
+            ADD CONSTRAINT `qualification_servey_questions_approver_id`
+            FOREIGN KEY (`approver_id`)
+            REFERENCES `users` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION,
+            ADD CONSTRAINT `qualification_servey_questions_category_id`
+            FOREIGN KEY (`category_id`)
+            REFERENCES `qualification_question_category` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION;
+
+            #
+
+            ALTER TABLE `qualification_servey_questions`
+            CHANGE COLUMN `created_date` `created_date` DATE NULL ;
+        </sql>
+        <rollback>
+            DROP TABLE `qualification_servey_questions`;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="Create INSERT_DRAFT_QUALIFICATION_QUESTION" author="s.knysh">
+        <sql endDelimiter="#">
+
+            DROP procedure IF EXISTS `INSERT_DRAFT_QUALIFICATION_QUESTION`;
+
+            #
+            CREATE PROCEDURE `INSERT_DRAFT_QUALIFICATION_QUESTION` (
+            In request_id varchar(11),
+            IN request_question_status_id varchar(1),
+            IN request_created_date varchar(1),
+            IN request_category_id varchar(1),
+            IN request_min_qualification_id varchar(1),
+            IN request_max_qualification_id varchar(1),
+            IN request_question LONGTEXT,
+            IN request_answer LONGTEXT,
+            IN request_creator_id varchar(1),
+            IN request_approver_id varchar(1))
+            BEGIN
+            INSERT INTO qualification_servey_questions (`id`, `question_status_id`, `created_date`, `category_id`, `min_qualification_id`, `max_qualification_id`, `question`, `answer`, `creator_id`, `approver_id`)
+            VALUES (
+            IF(request_id='', null, request_id),
+            IF(request_question_status_id='', 1, request_question_status_id),
+            IF(request_created_date='', null, FROM_UNIXTIME(request_created_date)),
+            IF(request_category_id='', null, request_category_id),
+            IF(request_min_qualification_id='', 1, request_min_qualification_id),
+            IF(request_max_qualification_id='', 4, request_max_qualification_id),
+            IF(request_question='', null, request_question),
+            IF(request_answer='', null, request_answer),
+            IF(request_creator_id='', null, request_creator_id),
+            IF(request_approver_id='', null, request_approver_id)
+            )
+
+            ON DUPLICATE KEY UPDATE
+            question_status_id = IF(request_question_status_id='',question_status_id,request_question_status_id),
+            created_date = IF(request_created_date='',created_date,FROM_UNIXTIME(request_created_date)),
+            category_id = IF(request_category_id='',category_id,request_category_id),
+            min_qualification_id = IF(request_min_qualification_id='',min_qualification_id,request_min_qualification_id),
+            max_qualification_id = IF(request_max_qualification_id='',max_qualification_id,request_max_qualification_id),
+            question = IF(request_question='',question,request_question),
+            answer = IF(request_answer='',answer, request_answer),
+            creator_id = IF(request_creator_id='',creator_id,request_creator_id),
+            approver_id = IF(request_approver_id='',approver_id,request_approver_id)
+            ;
+
+            Select * from qualification_servey_questions Where id=LAST_INSERT_ID();
+            END
+        </sql>
+        <rollback>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
