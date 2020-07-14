@@ -1,22 +1,23 @@
 package main;
 
-import main.controllers.*;
 import main.controllers.Administration.AdministrationController;
 import main.controllers.Administration.AppSettingsController;
+import main.controllers.AuditController;
+import main.controllers.ControllerFactory;
+import main.controllers.CustomerController;
 import main.controllers.Project.ProjectController;
 import main.controllers.Project.ProjectUserController;
+import main.controllers.qualification.QuestionController;
 import main.exceptions.AqualityException;
 import main.model.db.dao.project.UserDao;
 import main.model.db.imports.Importer;
 import main.model.db.imports.TestNameNodeType;
-import main.model.dto.project.APITokenDto;
 import main.model.dto.project.ProjectUserDto;
 import main.model.dto.project.TestRunDto;
 import main.model.dto.settings.UserDto;
 import main.model.email.TestRunEmails;
 
 import javax.naming.AuthenticationException;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,6 +76,8 @@ public class Session {
     public AppSettingsController getSettingsController () {
         return new AppSettingsController(user);
     }
+
+    public QuestionController getQuestionController () { return new QuestionController(user); }
 
     public UserDto getCurrentUser() {
         return user;

@@ -12,5 +12,5 @@ public class QualificationQuestionStatusDto extends BaseDto {
     @DataBaseInsert
     private Integer id;
     @DataBaseName(name = "request_status")
-    private String category;
+    private String status;
 }
